@@ -1,42 +1,23 @@
 /*
-Copyright 2019 @foostan
-Copyright 2020 Drashna Jaelre <@drashna>
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ * Copyright 2022 Kevin Gee <info@controller.works>
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 2 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #pragma once
 
 #include "config_common.h"
-
-/* USB Device descriptor parameter */
-/* VID/PID from esp-idf's default tinyusb configuration */
-#define VENDOR_ID       0x303A
-#define PRODUCT_ID      0x4004
-#define DEVICE_VER      0x0002
-#define MANUFACTURER    Svalboard
-#define PRODUCT         Svalboard Alpha RP2040
-
-#define INVERTED_DOWN_KEYS
-// The column with the "down" keys on both the normal and thumb clusters
-// is inverted.  This should be true on all units manufactured after 5/31/2023
-#ifdef INVERTED_DOWN_KEYS
-    #define MATRIX_COL_PUSHED_STATES { 0, 0, 1, 0, 0, 0 };
-#else
-    #define MATRIX_COL_PUSHED_STATES { 0, 0, 0, 0, 0, 0 };
-#endif
-#define MATRIX_COL_PUSHED_STATES_THUMBS { 0, 0, 1, 0, 0, 0 }
 
 /* Debounce reduces chatter (unintended double-presses) - set 0 if debouncing is not needed */
 /* #define DEBOUNCE 5 */
@@ -47,6 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define SPLIT_LAYER_STATE_ENABLE
 //#define SPLIT_LED_STATE_ENABLE
 #define SPLIT_MODS_ENABLE
+
 //#undef I2C_DRIVER
 //#define I2C_DRIVER I2CD1
 //#undef I2C1_SCL_PIN
@@ -57,8 +39,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 /* #define EE_HANDS  */
 /* #define MASTER_LEFT */
 /* #define MASTER_RIGHT */
-#define SPLIT_HAND_PIN GP0
-
+#define SPLIT_HAND_PIN GP18
 
 /* Top left key on left half */
 //#define BOOTMAGIC_LITE_ROW    0
@@ -81,6 +62,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //#define NO_ACTION_LAYER
 //#define NO_ACTION_TAPPING
 //#define NO_ACTION_ONESHOT
+
+
 
 #define RP2040_BOOTLOADER_DOUBLE_TAP_RESET
 #define RP2040_BOOTLOADER_DOUBLE_TAP_RESET_TIMEOUT 500 // Timeout window in ms in which the double tap can occur.
@@ -106,13 +89,27 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #define USB_POLLING_INTERVAL_MS 1
 
-/* key matrix size */
-// Rows are doubled-up
-#define MATRIX_ROWS  10
-#define MATRIX_COLS  6
-#define MATRIX_ROW_PINS \
-    { GP8, GP7, GP6, GP5, GP4 }
 
-// wiring of each half
-#define MATRIX_COL_PINS \
-    { GP14, GP13, GP12, GP11, GP10, GP9 }
+
+
+
+
+/* key matrix size */
+#define MATRIX_ROWS 10
+#define MATRIX_COLS 6
+
+#define DIRECT_PINS { \
+            {GP19, GP20, GP22, GP23, GP16,  GP17 }, \
+            {GP15, GP14, GP13, GP12, GP8,  GP9 },   \
+            {GP27, GP26, GP25, GP24, GP7,  GP10},   \
+            {GP6,  GP5,  GP4,  GP3,  GP2,  GP11},   \
+            {GP0,  GP1,  GP29, GP28, NO_PIN, NO_PIN} \
+}
+
+#define DIRECT_PINS_RIGHT { \
+	            {GP9, GP23,  GP10, GP11, GP16, GP17}, \
+	            {GP3,  GP6,  GP2,  GP1,  GP0,  GP22}, \
+	            {GP4,  GP8,  GP29, GP28, GP27, GP26}, \
+	            {GP5,  GP7,  GP15, GP14, GP13, GP12}, \
+	            {GP24, GP25, GP19, GP20, NO_PIN, NO_PIN} \
+}
