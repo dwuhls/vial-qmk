@@ -57,7 +57,7 @@ const uint16_t PROGMEM keymaps[NUM_LAYERS][MATRIX_ROWS][MATRIX_COLS] = {
 
         /*Down                  Inner (pad)     Upper (Mode)    O.Upper (nail)  OL (knuckle) Pushthrough*/  
         /*RT*/ MO(NAS),         KC_SPACE,       TO(FUNC),       KC_BSPC,        KC_LALT,     TG(NAS),
-        /*LT*/ KC_LSFT,         KC_ENTER,       MO(KC_NORMAL_HOLD), KC_TAB,         KC_LCTL,     KC_CAPS
+        /*LT*/ KC_LSFT,         KC_ENTER,       KC_NORMAL_HOLD, KC_TAB,         KC_LCTL,     KC_CAPS
     ),
 
     [NORMAL_HOLD] = LAYOUT(
@@ -74,7 +74,7 @@ const uint16_t PROGMEM keymaps[NUM_LAYERS][MATRIX_ROWS][MATRIX_COLS] = {
 
         /*Down                  Inner           Upper           Outer Upper     Outer Lower  Pushthrough*/
         /*RT*/ _______,         _______,        _______,        _______,        _______, _______,
-        /*LT*/ _______,         _______,        XXXXXXX,        _______,        _______, _______
+        /*LT*/ _______,         _______,        _______,        _______,        _______, _______
     ),
 
     [NAS] = LAYOUT(
@@ -90,8 +90,8 @@ const uint16_t PROGMEM keymaps[NUM_LAYERS][MATRIX_ROWS][MATRIX_COLS] = {
         /*L4*/ KC_1,            KC_EXCLAIM,     KC_TILDE,       KC_EQUAL,       KC_DEL,
 
         /*Down                  Inner           Upper           Outer Upper     Outer Lower  Pushthrough*/  
-        /*RT*/ MO(NAS),         KC_SPACE,       TO(FUNC),       KC_BSPC,        KC_LALT,        _______,
-        /*LT*/ KC_LSFT,         KC_ENTER,       TO(NORMAL),     KC_TAB,         KC_LCTL,        _______
+        /*RT*/ MO(NAS),         KC_SPACE,       TO(FUNC),       KC_BSPC,      KC_LALT, _______,
+        /*LT*/ KC_LSFT,       KC_ENTER,       KC_NORMAL_HOLD, KC_TAB,         KC_LCTL, _______
     ),
 
     [FUNC] = LAYOUT(
@@ -106,9 +106,9 @@ const uint16_t PROGMEM keymaps[NUM_LAYERS][MATRIX_ROWS][MATRIX_COLS] = {
         /*L3*/ XXXXXXX,         KC_F4,          XXXXXXX,        KC_F3,          KC_ESC,
         /*L4*/ XXXXXXX,         KC_F2,          XXXXXXX,        KC_F1,          KC_DEL,
 
-             /*Down           Inner           Upper           Outer Upper     Outer Lower  Pushthrough*/  
-        /*RT*/ MO(NAS),       KC_SPACE,       MO(FUNC_HOLD),       KC_BSPC,        KC_LALT, _______,
-        /*LT*/ KC_LSFT,       KC_ENTER,       TO(NORMAL),     KC_TAB,         KC_LCTL,_______
+             /*Down                  Inner           Upper           Outer Upper     Outer Lower  Pushthrough*/  
+        /*RT*/ MO(NAS),         KC_SPACE,       TO(FUNC),       KC_BSPC,      KC_LALT, _______,
+        /*LT*/ KC_LSFT,       KC_ENTER,       KC_NORMAL_HOLD, KC_TAB,         KC_LCTL,_______
     ),
 
     [FUNC_HOLD] = LAYOUT(
@@ -137,6 +137,23 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     uprintf("KL: kc: 0x%04X, col: %2u, row: %2u, pressed: %u, time: %5u, int: %u, count: %u\n", keycode, record->event.key.col, record->event.key.row, record->event.pressed, record->event.time, record->tap.interrupted, record->tap.count);
 #endif 
   switch (keycode) {
+
+    //  case KC_NORMAL_HOLD:
+    //   if (record->event.pressed) {
+    //       layer_clear();
+    //       layer_on(NORMAL_HOLD);
+    //   } else {
+    //       layer_off(NORMAL_HOLD);
+    //   }
+    //   return false;
+    //  case KC_FUNC_HOLD:
+    //   if (record->event.pressed) {
+    //       layer_clear();
+    //       layer_on(FUNC_HOLD);
+    //   } else {
+    //       layer_off(FUNC_HOLD);
+    //   }
+    //   return false;
     default:
       return true;
   }

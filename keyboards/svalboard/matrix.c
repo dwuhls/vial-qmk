@@ -1,193 +1,138 @@
-/* Copyright 2021 Ben Gruver <jesusfreke@jesusfreke.com>
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
- * IN THE SOFTWARE.
- */
+/*
+Copyright 2012-2018 Jun Wako, Jack Humbert, Yiancar
 
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
 #include <stdint.h>
 #include <stdbool.h>
-
-#include "lalboard.h"
-#include "config.h"
-
-#include "action.h"
-#include "gpio.h"
-#include "keyboard.h"
+#include <string.h>
+#include "util.h"
 #include "matrix.h"
+#include "debounce.h"
+#include "quantum.h"
 #include "print.h"
 
-#include "driver/uart.h"
-#include "esp_err.h"
+#define ROWS_PER_HAND 5
 
-static matrix_row_t current_matrix[MATRIX_ROWS];
-
-static const pin_t row_pins[LOCAL_MATRIX_ROWS] = MATRIX_ROW_PINS;
-static const pin_t col_pins[MATRIX_COLS] = MATRIX_COL_PINS;
+// matrix code
+const pin_t col_pins[MATRIX_COLS] = MATRIX_COL_PINS;
+const pin_t row_pins[ROWS_PER_HAND] = MATRIX_ROW_PINS;
 static const uint8_t col_pushed_states[MATRIX_COLS] = MATRIX_COL_PUSHED_STATES;
-static const uint8_t col_pushed_states_thumbs[MATRIX_COLS] = MATRIX_COL_PUSHED_STATES_THUMBS;
 
-matrix_row_t matrix_get_row(uint8_t row) {
-    return current_matrix[row];
+static inline void setPinOutput_writeLow(pin_t pin) {
+    ATOMIC_BLOCK_FORCEON {
+        setPinOutput(pin);
+        writePinLow(pin);
+    }
 }
 
-uint8_t get_first_local_row(void) {
-    return is_keyboard_left() ? (LOCAL_MATRIX_ROWS) : 0;
+static inline void setPinOutput_writeHigh(pin_t pin) {
+    ATOMIC_BLOCK_FORCEON {
+        setPinOutput(pin);
+        writePinHigh(pin);
+    }
 }
 
-uint8_t get_first_remote_row(void) {
-    return is_keyboard_left() ? 0 : (LOCAL_MATRIX_ROWS);
+static inline void setPinInputHigh_atomic(pin_t pin) {
+    ATOMIC_BLOCK_FORCEON {
+        setPinInputHigh(pin);
+    }
 }
 
-void matrix_print(void) {
-  print("\nr/c ");
-  for (uint8_t col = 0; col < MATRIX_COLS; col++) {
-      print_hex8(col);
-  }
-  print("\n");
+static inline uint8_t readMatrixPin(pin_t pin) {
+    if (pin != NO_PIN) {
+        return (readPin(pin));
+    } else {
+        return 1;
+    }
+}
 
-  for (uint8_t row = 0; row < MATRIX_ROWS; row++) {
-    print_hex8(row);
-    print(": ");
 
-    // esp-idf's printf doesn't seem to support the %b specifier, so we'll just
-    // print out the bits manually
-    matrix_row_t row_value = current_matrix[row];
-    for (uint8_t col_bit = 1 << (MATRIX_COLS - 1); col_bit != 0; col_bit >>= 1) {
-        print((row_value | col_bit) ? "1" : "0");
+bool select_row(uint8_t row) {
+    pin_t pin = row_pins[row];
+    if (pin != NO_PIN) {
+        setPinOutput_writeHigh(pin);  // this is opposite of most KB matrices
+        return true;
+    }
+    return false;
+}
+
+void unselect_row(uint8_t row) {
+    pin_t pin = row_pins[row];
+    if (pin != NO_PIN) {
+        setPinOutput_writeLow(pin);
+    }
+}
+
+static void unselect_rows(void) {
+    for (uint8_t x = 0; x < ROWS_PER_HAND; x++) {
+        unselect_row(x);
+    }
+}
+
+
+/* matrix state(1:on, 0:off) */
+extern matrix_row_t raw_matrix[ROWS_PER_HAND]; // raw values
+extern matrix_row_t matrix[ROWS_PER_HAND];     // debounced values
+
+void matrix_read_cols_on_row(matrix_row_t current_matrix[], uint8_t current_row) {
+    // Start with a clear matrix row
+    matrix_row_t current_row_value = 0;
+
+    select_row(current_row);
+    wait_us(60);
+
+    // For each col...
+    for (uint8_t col_index = 0; col_index < MATRIX_COLS; col_index++) {
+        uint8_t pin_state = (readPin(col_pins[col_index]) == col_pushed_states[col_index]) ? 1 : 0;  // read pin and match pushed_states define
+        // Populate the matrix row with the state of the col pin
+        current_row_value |= (pin_state << col_index);
     }
 
-    print("\n");
-  }
+    // Unselect row
+    unselect_row(current_row);
+    wait_us(60);
+
+    // Update the matrix
+    current_matrix[current_row] = current_row_value;
 }
 
-__attribute__((weak)) void matrix_init_kb(void) { matrix_init_user(); }
-
-__attribute__((weak)) void matrix_init_user(void) {}
-
-void matrix_init(void) {
-    for (int row = 0; row < sizeof(row_pins)/sizeof(pin_t); row++) {
-        setPinOutput(row_pins[row]);
-        writePin(row_pins[row], 0);
-    }
-
-    for (int col = 0; col < sizeof(col_pins)/sizeof(pin_t); col++) {
-        setPinInput(col_pins[col]);
-    }
-
-    matrix_init_quantum();
-}
-
-__attribute__((weak)) void matrix_scan_kb(void) { matrix_scan_user(); }
-
-__attribute__((weak)) void matrix_scan_user(void) {}
-
-
-matrix_row_t read_row(bool thumbs) {
-    matrix_row_t row = 0;
-
-    for (int col = 0; col < MATRIX_COLS; col++) {
-        int col_pin = col_pins[col];
-        if (thumbs == true){
-            if (readPin(col_pin) == col_pushed_states_thumbs[col]) {
-                row |= 1 << col;
+void matrix_init_custom(void) {
+    print("matrix_init_custom\n");
+    unselect_rows();
+    for (uint8_t col = 0; col < MATRIX_COLS; col++) {
+        pin_t pin = col_pins[col];
+        if (pin != NO_PIN) {
+            if (col == DOUBLEDOWN_COL){
+                setPinInputHigh(pin);
+            } else {
+                setPinInput(pin);
             }
         }
-        else {
-            if (readPin(col_pin) == col_pushed_states[col]) {
-                row |= 1 << col;
-            }
-        }
     }
-
-    return row;
 }
 
-bool read_remote_matrix(void) {
-    bool changed = false;
-
-    uint8_t buf[32];
-    int bytes_read = uart_read_bytes(SPLIT_TRANSPORT_UART_NUM, buf, sizeof(buf), 0);
-
-    uint8_t first_remote_row = get_first_remote_row();
-    for (int i = 0; i < bytes_read; i++) {
-        uint8_t row_data = buf[i];
-        uint8_t remote_row_index = (row_data >> 5);
-        matrix_row_t new_remote_row = row_data & 0b00011111;
-
-        uint8_t global_row_index = first_remote_row + remote_row_index;
-        changed |= new_remote_row != current_matrix[global_row_index];
-        current_matrix[global_row_index] = new_remote_row;
+bool matrix_scan_custom(matrix_row_t current_matrix[]) {
+    
+    matrix_row_t curr_matrix[ROWS_PER_HAND] = {0};
+    // Set row, read cols
+    for (uint8_t current_row = 0; current_row < (ROWS_PER_HAND); current_row++) {
+        matrix_read_cols_on_row(curr_matrix, current_row);
     }
+
+    bool changed = memcmp(raw_matrix, curr_matrix, sizeof(curr_matrix)) != 0;
+    if (changed) memcpy(raw_matrix, curr_matrix, sizeof(curr_matrix));
 
     return changed;
-}
-
-void send_local_matrix(void) {
-    uint8_t buf[LOCAL_MATRIX_ROWS];
-    int first_local_row = get_first_local_row();
-    for (int local_row_index = 0; local_row_index < LOCAL_MATRIX_ROWS; local_row_index++) {
-        int global_row_index = first_local_row + local_row_index;
-        buf[local_row_index] = (local_row_index << 5) | (current_matrix[global_row_index] & 0b00011111);
-    }
-
-    size_t bytes_written = uart_write_bytes(SPLIT_TRANSPORT_UART_NUM, buf, sizeof(buf));
-    if (bytes_written != sizeof(buf)) {
-        printf("Wrote an unexpected number of bytes to the uart: %d\n", bytes_written);
-    }
-}
-
-uint8_t matrix_scan(void) {
-    bool changed = false;
-    bool use_thumb_mask = false;
-
-    int first_local_row = get_first_local_row();
-
-    for (int local_row = 0; local_row < LOCAL_MATRIX_ROWS; local_row++) {
-        pin_t row_pin = row_pins[local_row];
-        writePin(row_pin, 1);
-        wait_us(40);
-
-        uint8_t global_row = first_local_row + local_row;
-        
-        use_thumb_mask = (local_row == 0);                          // only use the Thumbs mask for row 0 local -- this is also row 5 of 10 remote
-        matrix_row_t new_row = read_row(use_thumb_mask);    //
-        
-        changed |= new_row != current_matrix[global_row];
-        current_matrix[global_row] = new_row;
-        writePin(row_pin, 0);
-
-        wait_us(40);
-    }
-
-    if (is_keyboard_master()) {
-        changed |= read_remote_matrix();
-    } else if (changed) {
-        send_local_matrix();
-    }
-
-    matrix_scan_quantum();
-    return changed;
-}
-
-void matrix_power_down(void) {
-    for (int row = 0; row < LOCAL_MATRIX_ROWS; row++) {
-        int row_pin = row_pins[row];
-        writePin(row_pin, 0);
-        wait_us(40);
-    }
 }
