@@ -43,6 +43,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define FORCE_NKRO
 #define DYNAMIC_KEYMAP_LAYER_COUNT 5
 
+//Trackpoint pins
+#define PS2_CLOCK_PIN GP23
+#define PS2_DATA_PIN GP24
+#define PS2_RESET GP25
+
 //#define USB_POLLING_INTERVAL_MS 1
 
 
