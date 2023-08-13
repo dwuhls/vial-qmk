@@ -42,6 +42,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  
 #define FORCE_NKRO
 #define DYNAMIC_KEYMAP_LAYER_COUNT 5
+#define PREWAIT_US 90
+#define POSTWAIT_US 90
+
 
 //#define USB_POLLING_INTERVAL_MS 1
 
