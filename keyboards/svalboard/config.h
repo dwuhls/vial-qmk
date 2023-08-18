@@ -39,11 +39,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define SERIAL_USART_TX_PIN GP0 
 #define RP2040_BOOTLOADER_DOUBLE_TAP_RESET
 #define RP2040_BOOTLOADER_DOUBLE_TAP_RESET_TIMEOUT 500 // Timeout window in ms in which the double tap can occur.
- 
+#define RP2040_BOOTLOADER_DOUBLE_TAP_RESET_LED GP2 // Specify a optional status led by GPIO number which blinks when entering the bootloader
+
+
 #define FORCE_NKRO
 #define DYNAMIC_KEYMAP_LAYER_COUNT 5
 #define PREWAIT_US 90
 #define POSTWAIT_US 90
+
+
 
 
 //#define USB_POLLING_INTERVAL_MS 1
