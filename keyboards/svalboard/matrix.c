@@ -62,7 +62,7 @@ static inline uint8_t readMatrixPin(pin_t pin) {
 bool select_row(uint8_t row) {
     pin_t pin = row_pins[row];
     if (pin != NO_PIN) {
-        setPinOutput_writeHigh(pin);  // this is opposite of most KB matrices
+        setPinOutput_writeLow(pin);  // most KB matrices use active-low rows
         return true;
     }
     return false;
@@ -71,7 +71,7 @@ bool select_row(uint8_t row) {
 void unselect_row(uint8_t row) {
     pin_t pin = row_pins[row];
     if (pin != NO_PIN) {
-        setPinOutput_writeLow(pin);
+        setPinOutput_writeHigh(pin);
     }
 }
 
