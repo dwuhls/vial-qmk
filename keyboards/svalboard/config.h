@@ -43,9 +43,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
 #define FORCE_NKRO
-#define DYNAMIC_KEYMAP_LAYER_COUNT 5
+#define DYNAMIC_KEYMAP_LAYER_COUNT 10
 #define PREWAIT_US 90
 #define POSTWAIT_US 90
+#define VIAL_TAP_DANCE_ENTRIES 100
+#define VIAL_TAP_COMBO_ENTRIES 100
 
 
 
